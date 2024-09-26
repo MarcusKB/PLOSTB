@@ -1,0 +1,45 @@
+[RP:DEMOGRAPHIC_MODEL]
+1=
+
+[RP:MOD101]
+1=
+
+[RP:SAMAGG]
+1=
+
+[OPENWINDOW_1]
+MAXIM=1
+TOP=50
+LEFT=50
+HEIGHT=400
+WIDTH=400
+
+[RP:PRESIM]
+1=r=initsim s=presim
+2=
+
+[RP:CDYNCGE]
+1=r=presim
+2=
+
+[RP:MODTB]
+1=
+
+[RP:SDYNCGE]
+1=r=presim
+2=
+
+[RP:INITSIM]
+1=s=initsim
+2=
+
+[MRUFILES]
+1=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\timedef.inc
+2=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\sdyncge.lst
+3=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\sdyncge.log
+4=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\sdyncge.gms
+5=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\presim.gms
+6=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\modTB.gms
+7=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\mod101.gms
+8=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\initsim.gms
+9=C:\A_A_A\Project_19_20_India_TB\CGE model\India model (240523) run1\cdyncge.gms

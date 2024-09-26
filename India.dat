@@ -1,0 +1,899 @@
+
+*NB: Re-designed to include 2007 Thailand SAM data set (NESDB ThaiSAM2007)
+*NB: Henning Tarp Jensen & Marcus Keogh-Brown (September 2015)
+
+$STITLE Input file: ZIMBABWE.DAT. Zimbabwe data set. Standard CGE modeling system, Version 1.01
+
+$ontext
+This file includes country-specific model data.
+Signals to the user who is constructing his/her own data set:
+"!!" -- read carefully; perhaps need to supply information
+
+The file is divided into the following searchable blocks:
+1. SET DEFINITIONS
+2. SAM
+3. ELASTICITIES
+4. PHYSICAL FACTOR QUANTITIES
+5. COMMODITY VALUE SHARES FOR HOME CONSUMPTION
+6. INITIALIZATION OF TAX DATA
+
+$offtext
+
+*1. SET DEFINITIONS #################################################
+$ontext
+
+Instructions:
+
+!!-1. In this section, the user should DEFINE all sets (by entering the
+names of set elements). The only exception (which is signalled when
+relevant) is for sets that are not invariably included in the SAM --
+their element lists may be left blank. The user should NOT change set
+names.
+
+
+!!-2. The set AC has to include the following elements:
+ GOV           government
+ ROW           rest of the world
+ S-I           savings-investment
+ DSTK          stock changes
+
+ TRNCSTDOM     domestic transactions cost account
+ TRNCSTEXP     export transactions cost account
+ TRNCSTIMP     import transactions cost account
+
+ INSTAX        direct taxes on domestic institutions
+ FACTAX        direct factor taxes
+ IMPTAX        import taxes
+ EXPTAX        export taxes
+ VATAX         value-added taxes
+ ACTTAX        indirect taxes on activity revenue
+ COMTAX        indirect taxes on commodity sales in domestic market
+ DUM           dummy
+
+ TOTAL         total
+
+
+Comments on the above list:
+
+a. The name TOTAL is also compulsory in the SAM.
+
+b. If the SAM includes a government,the rest of the world, savings-
+investment and/or stock changes, then the above account names (GOV, ROW,
+S-I, DSTK) have to be used for these entities.
+
+c. The elements that are related to transactions costs and taxes as well
+as the dummy account are used for reports. In the SAM, any other names
+may be used (subject to the restrictions imposed by GAMS syntax).
+
+d. In addition, the tax elements are used for model calibration. Later
+in this file, the user will be prompted to supply the names of the SAM
+accounts that correspond to these elements (see the parameter TAXPAR).
+Taxes have to be paid to special tax accounts that, in their turn, pass on
+their total receipts to the account GOV; it is illegal to have taxes paid
+directly to GOV.
+
+$offtext
+
+
+SET
+*!!-start entering information here
+ AC  global set for model accounts - aggregated microsam accounts
+ /
+*activities
+ a001*a031
+*commodities
+ c001*c031
+*margins
+ MARG
+*factors
+ f01*f03
+*Domestic non-government institutions
+*households
+ H01*H05
+*enterprises
+ ENT
+*taxes
+ t01*t06
+*Required accounts
+ GOV           government
+ ROW           rest of the world
+ S-I           savings-investment
+ DSTK          stock changes
+
+ TRNCSTDOM     domestic transactions cost account
+ TRNCSTEXP     export transactions cost account
+ TRNCSTIMP     import transactions cost account
+
+ INSTAX        direct taxes on domestic institutions
+ FACTAX        direct factor taxes
+ IMPTAX        import taxes
+ EXPTAX        export taxes
+ VATAX         value-added taxes
+ ACTTAX        indirect taxes on activity revenue
+ COMTAX        indirect taxes on commodity sales in domestic market
+ DUM           dummy
+
+ TOTAL         total
+ /
+
+
+ A(AC)  activities
+ /
+ a001*a031
+ /
+
+*Note: if your SAM does not include elements for this set, leave it empty.
+ AAGR(A)  agricultural activities
+ /
+ a001*a014
+ /
+ ;
+
+ ACES(A) = NO;
+ ALEO(A)$(NOT ACES(A)) = YES;
+ ANAGR(A) = NOT AAGR(A);
+
+SET
+
+ C(AC)  commodities
+ /
+ c001*c031
+ /
+
+*Note: if your SAM does not include elements for this set, leave it empty.
+ CAGR(C)    agricultural commodities
+ /
+ c001*c014
+ /
+;
+ CNAGR(C)      = NOT CAGR(C);
+
+ SETS
+*Note: Each of these three sets identify the element in the SAM
+*that receives payments from commodity accounts for transactions
+*services (for domestic sales, exports, and imports, respectively).
+*If your SAM does not include these payments, leave the
+*sets empty.
+ CTD(AC)      domestic transactions cost account / MARG /
+ CTE(AC)      export transactions cost account   / /
+ CTM(AC)      import transactions cost account   / /
+
+
+ F(AC)  factors
+ /
+ f01*f03
+ /
+
+*Note: in the unlikely event that your SAM does not include labor
+*factors, leave the following set empty.
+ FLAB(F) labor
+ /
+ f01*f02
+ /
+
+*Note: if your SAM does not include land factors, leave the following
+*set empty.
+ FLND(F)   land
+ /
+ /
+
+*Note: in the unlikely event that your SAM does not include capital
+*factors, leave the following set empty.
+ FCAP(F) capital
+ /
+ f03
+ /
+
+ INS(AC)  institutions
+ /
+*Households
+ H01*H05
+*Enterprises
+ ENT
+*Government and Rest of World
+ GOV
+ ROW
+ /
+
+ INSD(INS)  domestic institutions
+ /
+*Households
+ H01*H05
+*Enterprises
+ ENT
+*Government
+ GOV
+ /
+
+ INSDNG(INSD) domestic non-government institutions
+ /
+*Households
+ H01*H05
+*Enterprises
+ ENT
+ /
+
+*Note: if your SAM does not include elements for this set, leave it empty.
+ EN(INSDNG)  enterprises
+ /
+ ENT
+ /
+
+ H(INSDNG)  households
+ /
+ H01*H05
+ /
+ ;
+
+ ACNT(AC) = YES; ACNT('TOTAL') = NO;
+
+DISPLAY
+ ACES, ALEO, AAGR, ANAGR, CAGR, CNAGR
+ ;
+
+
+*2. SAM #############################################################
+
+$ontext
+
+!!-In this section, a SAM is included and balanced (if needed).
+
+The SAM can be included in two ways:
+1. It can be put directly in the file in the space below (as in this file).
+A maximum of 6 columns is feasible; or
+2. It can be imported with an import program such as XLLINK or
+SSLINK.
+
+$offtext
+
+
+*!! The user includes a SAM and selects its name (subject to GAMS
+*syntactical rules).
+$ontext
+TABLE ZIMSAM2(AC,ACP)   8-SECTOR MICROSAM FOR ZIMBABWE ($Zim mill 1991)
+
+              AAGEX       AAGFO       AAGOT       AMINE       ANAFO       ANAOI
+
+CAGEX                                                       341.998    1135.653
+CAGFO                                                       243.014
+CAGOT         6.304                 244.130                 827.023     142.909
+CMINE                                            91.141      39.080    1268.605
+CNAFO        71.796      22.657     340.069                 263.991      39.643
+CNAOI       496.119     230.863     178.007     573.868     447.862    5074.341
+CNASE      1351.014     194.185     473.571     343.367    1322.918    2574.233
+LABUSK      184.184     242.963     356.721      35.565      29.818     650.225
+LABSK       526.377      53.494      75.808     327.036     246.454    2507.070
+CAPLSC     1222.634     206.493     289.945
+CAPSH        35.526      86.542     137.979
+CAPOT                                           821.400    1678.565    3538.868
+LANDLS      330.178      95.609      31.745
+LANDSH       62.822      68.209       5.771
+ATAX        105.785     -23.176     136.889      88.876     -44.226     697.621
+TOTAL      4392.739    1177.839    2270.635    2281.253    5396.497   17629.168
+
+      +       ANASE       CAGEX       CAGFO       CAGOT       CMINE       CNAFO
+
+AAGEX                  4392.740
+AAGFO                              1177.839
+AAGOT                                          2270.634
+AMINE                                                      2281.253
+ANAFO                                                                  5396.497
+CAGEX         6.422
+CAGOT        90.862
+CMINE       117.074
+CNAFO       155.183
+CNAOI      4379.558
+CNASE      2088.901
+LABUSK     1530.000
+LABSK      6085.002
+CAPOT      4820.998
+ATAX        516.230
+TAR                       3.643       6.073                  24.471      38.337
+ROW                      15.568      32.447                 100.162     158.322
+TOTAL     19790.230    4411.951    1216.359    2270.634    2405.886    5593.156
+
+      +       CNAOI       CNASE      LABUSK       LABSK      CAPLSC       CAPSH
+
+ANAOI     17629.167
+ANASE                 19790.230
+HLSUPP                                          810.446    1719.072
+HLSLOW                               99.675
+HSHHLD                              694.726                             260.048
+HURBUPP                                        8984.794
+HURBLOW                            2235.074
+TAR        1736.993      51.483
+ROW        7291.128     450.372                  26.000
+TOTAL     26657.288   20292.085    3029.475    9821.240    1719.072     260.048
+
+      +       CAPOT      LANDLS      LANDSH      HLSUPP      HLSLOW      HSHHLD
+
+CAGEX                                                                    78.119
+CAGFO                                            59.250      21.232     401.486
+CAGOT                                           362.421      13.346     363.856
+CNAFO                                          1765.161      22.894     251.747
+CNAOI                                          2744.633      31.671     394.624
+CNASE                                          2287.498       8.607     248.899
+HLSUPP                  457.532
+HSHHLD                              136.802
+HURBLOW     126.709
+ENTR      10733.122
+YTAX                                            687.887                  20.947
+S-I                                            1343.487       1.925      69.263
+TOTAL     10859.831     457.532     136.802    9250.337      99.675    1828.941
+
+      +     HURBUPP     HURBLOW        ENTR        YTAX        ATAX         TAR
+
+CAGFO       132.267     269.485
+CAGOT        50.482     174.809
+CNAFO      2058.032     549.800
+CNAOI      4076.252     790.440
+CNASE      2693.450     312.539
+HLSUPP                             5526.096
+HSHHLD       79.105     180.345
+HURBUPP                            3306.025
+YTAX       1239.894     111.273    1667.000
+GOV                                            3727.000    1478.000    1861.000
+ROW                                 535.000
+S-I        2068.071     212.253     908.000
+TOTAL     12397.553    2600.944   11942.121    3727.000    1478.000    1861.000
+
+      +         GOV         ROW         S-I       TOTAL
+
+AAGEX                                          4392.740
+AAGFO                                          1177.839
+AAGOT                                          2270.634
+AMINE                                          2281.253
+ANAFO                                          5396.497
+ANAOI                                         17629.167
+ANASE                                         19790.230
+CAGEX                  2849.760                4411.952
+CAGFO                    89.624                1216.358
+CAGOT                    24.798     -30.306    2270.634
+CMINE                   889.986                2405.886
+CNAFO        39.481     178.565    -165.863    5593.156
+CNAOI       269.819    1444.148    5525.083   26657.288
+CNASE      4465.700    1598.118     329.085   20292.085
+LABUSK                                         3029.476
+LABSK                                          9821.241
+CAPLSC                                         1719.072
+CAPSH                                           260.047
+CAPOT                                         10859.831
+LANDLS                                          457.532
+LANDSH                                          136.802
+HLSUPP      635.190     102.000                9250.336
+HLSLOW                                           99.675
+HSHHLD      477.915                            1828.941
+HURBUPP     106.734                           12397.553
+HURBLOW     239.161                            2600.944
+ENTR       1209.000                           11942.122
+YTAX                                           3727.001
+ATAX                                           1477.999
+TAR                                            1861.000
+GOV                     291.000                7357.000
+ROW         418.000                            9026.999
+S-I        -504.000    1559.000                5657.999
+TOTAL      7357.000    9026.999    5657.999
+ ;
+
+
+*!! : The user transfers the data of the above table (using the
+*selected parameter name) in the SAM parameter.
+ SAM(AC,ACP) = ZIMSAM2(AC,ACP) / 1000 ;
+
+*Note that there is no LANDSH employed in AAGOT, although there is a small
+*SAM entry there. We zero out the small SAM entry.
+ SAM('LANDSH','AAGOT') = 0 ;
+$offtext
+
+
+PARAMETER INDSAM2014(AC,ACP) 2014 India SAM (bn INR)
+;
+
+*## Read-in of 2014 India SAM in bn INR ##
+$libinclude XLIMPORT INDSAM2014 IndiaData2014.xlsx INDSAM2014
+
+*## SAM in bn INR ##
+SAM(ACNT,ACNTP) = SAMscale*INDSAM2014(ACNT,ACNTP)/TARGETscale;
+
+*Account totals are recomputed. Check for SAM balance.
+
+ SAM('TOTAL',AC) = 0;
+ SAM(AC,'TOTAL') = 0;
+
+ SAM('TOTAL',AC) = SUM(ACNT, SAM(ACNT,AC));
+ SAM(AC,'TOTAL') = SUM(ACNT, SAM(AC,ACNT));
+
+ SAMBALCHK(AC)   = SAM('TOTAL',AC) - SAM(AC,'TOTAL');
+
+ DISPLAY "Read in SAM", SAMBALCHK;
+ DISPLAY "Read in SAM", SAM;
+
+
+*If account balances exceed a critical maximum value, SAMBAL.INC will
+*balance the SAM exactly.
+$INCLUDE SAMBAL.INC
+
+$STITLE Input file: THAILAND.DAT. Standard CGE modeling system, Version 1.01
+*$STITLE Input file: ZIMBABWE.DAT. Standard CGE modeling system, Version 1.01
+
+*Defining CINV using SAM data with potential user input.
+
+$ontext
+*!!
+In the model, there are two ways of separating stock changes from fixed
+investment:
+
+a. If the SAM includes the account S-I (in its column making payments to
+commodities for fixed investments and an aggregate payment to DSTK for
+stock changes) and DSTK (in its row paid by S-I, in its column making
+payments, positive or negative, to commodities, representing stock
+change values), then no user action is needed -- the set CINV will by
+default include all elements in C that receive payments from S-I.
+
+b. If, the account DSTK does not appear in the SAM, then the set CINV
+should only include the commodities that receive payments from S-I for
+fixed investment; commodities receiving payments for stock changes
+should be excluded. The default is that all commodities receiving
+payments are included; the user may exclude selected commodities from
+CINV. (An example of how to do this is provided just below.)
+
+$offtext
+
+*All commodities receiving payments from S-I are included in the set CINV.
+*Note: Negative payments are for stock changes and should be treated
+*as such.
+ CINV(C)$SAM(C,'S-I') = YES;
+
+*!!- User option to exclude selected commodities from the set CINV. Only
+*relevant for SAMs without the account DSTK.
+*Example:
+*If the set C includes a commodity called CWHEAT and payments in the cell
+*SAM('CWHEAT','S-I') are for stock changes, the user should include
+*the following line in the program:
+* CINV('CWHEAT')  = NO;
+
+DISPLAY CINV;
+
+
+*3. ELASTICITIES ####################################################
+$ontext
+
+!!- In this section, the user inputs elasticities for trade, production,
+and household consumption. If the user does not supply all required
+data, missing data will be generated in STDMOD.GMS using simple
+assumptions.
+
+$offtext
+
+*Trade elasticities========================================
+
+*SIGMAQ is the elasticity of substitution between imports
+*and domestic output in domestic demand.
+*SIGMAT is the elasticity of transformation for domestic
+*marketed output between exports and domestic supplies.
+
+SET
+ TRDELAS  trade elasticities
+ /
+ SIGMAQ  Armington elasticity
+ SIGMAT  CET elasticity
+ /
+
+PARAMETER TRADELAS(AC,TRDELAS)   Armington and CET elasticities by commodity
+;
+
+TRADELAS(AC,'SIGMAQ') = 1.2;
+TRADELAS(AC,'SIGMAT') = 1.5;
+
+$ontext
+TABLE TRADELAS(AC,TRDELAS)   Armington and CET elasticities by commodity
+
+           SIGMAQ      SIGMAT
+
+CAGEX       3.000       1.250
+CAGFO       3.000       1.250
+CAGOT       3.000       1.250
+CMINE       0.750       1.250
+CNAFO       1.250       2.000
+CNAOI       1.500       2.000
+CNASE       0.500       0.500
+ ;
+$offtext
+
+*Production elasticities===================================
+
+PARAMETER
+ PRODELAS(A)  Elas of substit bt. factors - bottom of technology nest
+* /
+*AAGEX       0.750
+*AAGFO       0.750
+*AAGOT       0.771
+*AMINE       0.500
+*ANAFO       1.500
+*ANAOI       0.900
+*ANASE       1.249
+* /
+
+ PRODELAS2(A)  Elas of substit bt. agg fac & intermed - top of tech nest
+
+ ELASAC(C) output aggregation elasticity for commodity C;
+ ;
+
+ PRODELAS(A) = 0.8;
+ PRODELAS2(A) = 0.6;
+ ELASAC(C)    = 4;
+
+
+*Household population data=================================
+
+*Note: Population data are not needed to run the model.
+*However, they may be useful for verification of household
+*model parameters and for report parameters.
+
+
+*PARAMETER
+* POP(H) Base-year population for household h (units)
+* /
+*
+* /
+*;
+
+PARAMETER LESELAS1(C,H) Exp'e elasticity of market dem for com c by hhd h
+;
+
+LESELAS1(C,H) = 1;
+
+$ontext
+*Household consumption elasticities========================
+*Note: The Frisch parameter is included in this section.
+
+TABLE  LESELAS1(C,H) Exp'e elasticity of market dem for com c by hhd h
+
+           HLSUPP      HLSLOW      HSHHLD     HURBUPP     HURBLOW
+
+CAGEX                               1.000
+CAGFO       0.977       0.758       0.681       0.984       0.802
+CAGOT       1.174       1.367       1.371       0.876       1.339
+CMINE
+CNAFO       1.300       1.500       1.500       1.300       1.500
+CNAOI       1.037       1.271       1.262       1.041       1.254
+CNASE       0.923       0.677       0.729       0.951       0.876
+ ;
+ ;
+$offtext
+
+
+PARAMETERS
+ FRISCH(H)        Frisch parameter for household LES demand
+ LESELAS2(A,C,H)  Exp'e elasticity of home dem by com - act - hhd
+*Note: Data for LESELAS2 are only need for the commodity-activity-
+*household combinations that are relevant to home consumption.
+ ;
+
+ FRISCH(H)           = -2.54;
+*For an econometrically estimated functional relationship between the
+*Frisch parameter and per-capita income based on cross-country data, see
+*p. 248 in Lluch, Powell and Williams (1977). Patterns in Household
+*Demand and Savings. London: Oxford University Press.
+
+
+*The LES demand system permits the user to specify commodity-specific
+*expenditure elasticities and household-specific Frisch parameters.
+*(The Frisch parameter measures the elasticity of the marginal utility
+*of income with respect to income.)
+*If such information is not available the user may alternative specify
+*all elasticities to be unity (as we do just below). If, in addition,
+*the Frisch parameter is set at -1, the LES system collapses to a
+*Cobb-Douglas system.
+*LESELAS1(C,H)   =  1;
+
+*Note: Data for LESELAS2 are only needed (and used) for the commodity-
+*activity-household combinations that are relevant to home consumption.
+* LESELAS2(A,C,H)     = 0;
+
+$ontext
+*############################# AIDS demand system ##############################
+
+*###############################################################################
+*######################## SECTION 11: Price Elasticities #######################
+*###############################################################################
+
+SET
+C_SLUTSKY /C001*C049, income/
+
+MAPSLUTSKY(C,C_SLUTSKY)  Mapping between SLUTSKY matrix commodities and SAM commodities
+/
+c001.c001
+c002.c002
+c003.c003
+c004.c004
+c005.c005
+c006.c006
+c007.c007
+c008.c008
+c009.c009
+c010.c010
+c011.c011
+c012.c012
+c013.c013
+c014.c014
+c015.c015
+c016.c016
+c017.c017
+c018.c018
+c019.c019
+c020.c020
+c021.c021
+c022.c022
+c023.c023
+c024.c024
+c025.c025
+c026.c026
+c027.c027
+c028.c028
+c029.c029
+c030.c030
+c031.c031
+c032.c032
+c033.c033
+c034.c034
+c035.c035
+c036.c036
+c037.c037
+c038.c038
+c039.c039
+c040.c040
+c041.c041
+c042.c042
+c043.c043
+c044.c044
+c045.c045
+c046.c046
+c047.c047
+c048.c048
+c049.c049
+/
+;
+
+PARAMETER SLUTSKY(H,C_SLUTSKY,C_SLUTSKY) Thailand Slutsky matrix
+;
+
+*## Read-in of Thailand SLUTSKY matrix ##
+$libinclude XLIMPORT SLUTSKY ThaiSAM2007.xlsx SLUTSKY
+
+ALIAS (C_SLUTSKY,C_SLUTSKYP);
+$offtext
+
+
+
+*############################# AIDS demand system ##############################
+
+*###############################################################################
+*######################## SECTION 11: Price Elasticities #######################
+*###############################################################################
+
+SET
+C_AIDS /C001*C031, b/
+
+MAPAIDSset(C_AIDS,C)  Mapping between AIDS parameter matrix commodities and SAM commodities
+/
+c001.c001
+c002.c002
+c003.c003
+c004.c004
+c005.c005
+c006.c006
+c007.c007
+c008.c008
+c009.c009
+c010.c010
+c011.c011
+c012.c012
+c013.c013
+c014.c014
+c015.c015
+c016.c016
+c017.c017
+c018.c018
+c019.c019
+c020.c020
+c021.c021
+c022.c022
+c023.c023
+c024.c024
+c025.c025
+c026.c026
+c027.c027
+c028.c028
+c029.c029
+c030.c030
+c031.c031
+/
+;
+
+PARAMETER AIDSparm_H01_BAL(C_AIDS,CP) India AIDS parameter matrix HHLD income quintile 1
+          AIDSparm_H02_BAL(C_AIDS,CP) India AIDS parameter matrix HHLD income quintile 2
+          AIDSparm_H03_BAL(C_AIDS,CP) India AIDS parameter matrix HHLD income quintile 3
+          AIDSparm_H04_BAL(C_AIDS,CP) India AIDS parameter matrix HHLD income quintile 4
+          AIDSparm_H05_BAL(C_AIDS,CP) India AIDS parameter matrix HHLD income quintile 5
+          AIDSparm_p(C,CP,H)        India cross-price elasticity matrix
+          AIDSparm_b(C,H)           India income elasticity vector
+;
+
+*## Read-in of Thailand SLUTSKY matrix ##
+$libinclude XLIMPORT AIDSparm_H01_BAL IndiaData2014.xlsx AIDSparm_H01_BAL
+$libinclude XLIMPORT AIDSparm_H02_BAL IndiaData2014.xlsx AIDSparm_H02_BAL
+$libinclude XLIMPORT AIDSparm_H03_BAL IndiaData2014.xlsx AIDSparm_H03_BAL
+$libinclude XLIMPORT AIDSparm_H04_BAL IndiaData2014.xlsx AIDSparm_H04_BAL
+$libinclude XLIMPORT AIDSparm_H05_BAL IndiaData2014.xlsx AIDSparm_H05_BAL
+
+AIDSparm_p(C,CP,'H01') = SUM(C_AIDS$MAPAIDSset(C_AIDS,C),AIDSparm_H01_BAL(C_AIDS,CP));
+AIDSparm_p(C,CP,'H02') = SUM(C_AIDS$MAPAIDSset(C_AIDS,C),AIDSparm_H02_BAL(C_AIDS,CP));
+AIDSparm_p(C,CP,'H03') = SUM(C_AIDS$MAPAIDSset(C_AIDS,C),AIDSparm_H03_BAL(C_AIDS,CP));
+AIDSparm_p(C,CP,'H04') = SUM(C_AIDS$MAPAIDSset(C_AIDS,C),AIDSparm_H04_BAL(C_AIDS,CP));
+AIDSparm_p(C,CP,'H05') = SUM(C_AIDS$MAPAIDSset(C_AIDS,C),AIDSparm_H05_BAL(C_AIDS,CP));
+AIDSparm_b(C,'H01')    = AIDSparm_H01_BAL('b',C);
+AIDSparm_b(C,'H02')    = AIDSparm_H02_BAL('b',C);
+AIDSparm_b(C,'H03')    = AIDSparm_H03_BAL('b',C);
+AIDSparm_b(C,'H04')    = AIDSparm_H04_BAL('b',C);
+AIDSparm_b(C,'H05')    = AIDSparm_H05_BAL('b',C);
+
+*4. PHYSICAL FACTOR QUANTITIES ######################################
+
+$ontext
+!!: If you have data on physical factor DEMANDS, add them in this
+section. If so, there is no need to include supply quantities --
+the model code in STDMOD.GMS will not use the supply information.
+
+If data are provided for SUPPLY quantities (but not for demand), the
+model code in STDMOD.GMS will define disaggregated activity demand
+quantities for each factor as:
+(total factor supply) TIMES (activity share in total activity payments
+to the factor).
+This amounts to assuming that, for each factor, wages are uniform across
+activities. The data on factor payments are from the SAM.
+
+If you don't have any data on physical factor quantities, leave
+this section blank.
+$offtext
+
+*###############################################################################
+*############################## NEED ELABORATION ###############################
+*###############################################################################
+$ontext
+PARAMETER
+ QFSHBASE00(INSD,F) base-year qnty of supply of factor f by household h
+* QFBASE00(F,A)   qnty of factor f employed by activity a
+ QFSBASE(F)      base-year qnty of supply for factor f
+ QFSHBASE(INSD,F)   base-year qnty of supply of factor f by household h
+* QFBASE(F,A)     qnty of factor f employed by activity a
+;
+
+*$libinclude XLIMPORT QFBASE00 IndiaData2014.xlsx QFBASE00
+$libinclude XLIMPORT QFSHBASE00 IndiaData2014.xlsx QFSHBASE00
+
+*QFBASE(F,A)      = QFBASE00(F,A);
+QFSHBASE(INSD,F) = QFSHBASE00(INSD,F);
+QFSBASE(F)       = SUM(INSD,QFSHBASE00(INSD,F));
+$offtext
+*###############################################################################
+*############################## NEED ELABORATION ###############################
+*###############################################################################
+
+
+$ontext
+PARAMETER
+ QFSBASE(F)   base-year qnty of supply for factor f
+ /
+ /
+
+ QFBASE(F,A)  qnty of factor f employed by activity a
+ /
+ /
+;
+$offtext
+
+$ontext
+TABLE QFBASE(F,A)  qnty of factor f employed by activity a
+*Units: for labor factors -- '000 workers; for land factors -- '000 ha
+
+             AAGEX       AAGFO       AAGOT       AMINE       ANAFO       ANAOI
+
+LABUSK     322.822     307.663     444.360      31.634      26.522     688.316
+LABSK       16.483       1.675       2.374      10.241       7.718      78.509
+LANDLS     163.221     322.243      15.090
+LANDSH     375.700    2486.100
+
+     +       ANASE
+
+LABUSK    1649.482
+LABSK      190.551
+;
+$offtext
+
+
+*5. COMMODITY VALUE SHARES FOR HOME CONSUMPTION #####################
+
+$ontext
+
+!!-User input is needed only if the SAM includes household home
+consumption, reflected in payments from households to activities, and
+if these activities produce multiple outputs.
+
+If this condition is met, the user should define the parameter SHRHOME,
+using extraneous data on commodity value shares which, for each
+household-activity combination, should sum to unity.
+
+In the absence of user input, the program will compute these value
+shares in the file STDMOD.GMS, using the OUTPUT value shares for
+each commodity. (For single-output activities, the computed shares
+will quite correctly be at unity.)
+
+Note that elasticities are needed for the parameter LESELAS2(A,C,H)
+(above in the elasticity section) for the identified combinations
+
+$offtext
+
+PARAMETER
+ shrhome(A,C,H) value share for comm'y c in home cons of hhd h from act a
+ ;
+
+*!!: If needed, manually define shrhome.
+ shrhome(A,C,H) = 0;
+
+
+*6. INITIALIZATION OF TAX DATA ######################################
+$ontext
+
+!!: In this section, the user HAS TO supply the names of the tax accounts
+in the SAM into the definition of TAXPAR. In STDMOD.GMS, TAXPAR is used
+for model calibration. A proper definition of TAXPAR is necessary for
+the functioning of the model if the SAM includes taxes.
+
+$offtext
+
+SET
+ TX  taxes in the model
+ /
+ INSTAX         direct taxes on domestic institutions
+ FACTAX         direct factor taxes
+ IMPTAX         import taxes
+ EXPTAX         export taxes
+ VATAX          value-added taxes
+ ACTTAX         taxes on activity revenue
+ COMTAX         taxes on commodity sales in domestic market
+ /
+;
+
+PARAMETER
+ TAXPAR(TX,AC)   payment by account ac to tax account tx
+ ;
+
+ALIAS(TX,TXP);
+
+
+*!!: Starting from here, the user should supply names of matching tax
+*accounts in the SAM on the right-hand side.
+
+*direct taxes on domestic institutions
+ TAXPAR('INSTAX',INSD) = SAM('t06',INSD);
+
+*direct factor taxes
+ TAXPAR('FACTAX',F)    = SAM('t05',F);
+
+*import taxes
+ TAXPAR('IMPTAX',C)    = SAM('t02',C);
+
+*export taxes
+ TAXPAR('EXPTAX',C)    = SAM('t03',C);
+
+*value-added taxes
+ TAXPAR('VATAX',A)     = 0 ;
+
+*taxes on activity revenue
+ TAXPAR('ACTTAX',A)    = SAM('t01',A);
+
+*taxes on commodity sales in domestic market
+ TAXPAR('COMTAX',C)    = SAM('t04',C);
+
+*#*#*#*#*# THE END OF THAILAND.DAT #*#*#*#*
