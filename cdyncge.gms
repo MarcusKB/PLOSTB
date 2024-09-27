@@ -1,6 +1,6 @@
 
 *###############################################################################
-*########### Counterfactual Dynamic CGE (cdyncge) simulation program ###########
+*##########  Counterfactual Dynamic CGE (cdyncge) simulation program  ##########
 *###############################################################################
 
 
